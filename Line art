@@ -1,0 +1,100 @@
+from aluLib import *
+
+# define global variables which will be used during animations
+x1a = 450
+y1a = 50
+x1b = 140
+y1b = 80
+x2a = 500
+y2a = 400
+x2b = 150
+y2b = 320
+
+# velocities for animating lines
+v_x1a = 5.5
+v_x1b = 2.5
+v_x2a = -4.5
+v_x2b = -3.5
+
+
+# main function to draw the line art
+def draw_line_art(x1a, y1a, x1b, y1b, x2a, y2a, x2b, y2b, line_count):
+    # set background color as black
+    set_clear_color(0, 0, 0)
+    clear()
+    # Define starting color codes for drawing gradient
+    # And then set stroke color
+    c1 = 0.4
+    c2 = 0.5
+    c3 = 0.1
+    set_stroke_color(c1, c2, c3)
+    enable_smoothing()
+    #
+    draw_line(x1a, y1a, x1b, y1b)
+    draw_line(x2a, y2a, x2b, y2b)
+    # top points velocity of new lines to draw
+    vx_t = (x1a - x1b)/line_count
+    vy_t = (y1a - y1b) / line_count
+
+    # bottom points velocity of new lines to draw
+    vx_b = (x2a - x2b)/line_count
+    vy_b = (y2a - y2b) / line_count
+
+    # reserve the count variable provided as a parameter
+    count = line_count
+
+    while count >= 0:
+        # animate colors to make a gradient
+        if c1 < 1:
+            c1 += 0.01
+        elif c2 < 1:
+            c2 += 0.008
+        elif c3 < 1:
+            c3 += 0.02
+
+        # every time we change color codes we call this function to force changes
+        set_stroke_color(c1, c2, c3)
+        draw_line(x1b, y1b, x2a, y2a)
+
+        # calculate new top points for a new line
+        x1b = x1b + vx_t
+        y1b = y1b + vy_t
+
+        # calculate new bottom points for a new line
+        x2a = x2a - vx_b
+        y2a = y2a - vy_b
+
+        count -= 1
+
+
+# function to regulary change the global positions of line art main variables
+def animate_positions():
+    global x1a, y1a, x1b, y1b, x2a, y2a, x2b, y2b
+    x1a += v_x1a
+    x1b += v_x1b
+    x2a += v_x2a
+    x2b -= v_x2b
+
+
+# it ensures that the lines while animation don't go beyond or below the edges of the window
+def change_directions():
+    global v_x1a, v_x2a, v_x2b, v_x1b
+    if x1a < 20 or x1a > 500:
+        v_x1a *= -1
+    if x1b < 20 or x1b > 420:
+        v_x1b *= -1
+    if x2a < 10 or x2a > 600:
+        v_x2a *= -1
+    if x2b < 20 or x2b > 600:
+        v_x2b *= -1
+
+
+def main():
+    draw_line_art(x1a, y1a, x1b, y1b, x2a, y2a, x2b, y2b, 50)
+    animate_positions()
+    change_directions()
+
+
+start_graphics(main, width=600, height=600, title="Line Art: (Comfort Sibanda)")
+
+
