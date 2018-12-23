@@ -1,0 +1,202 @@
+from aluLib import *
+
+# Define window width and height
+window_width = 1000
+window_height = 600
+
+game_in_progress = False
+
+# usual paddle measures: they will also be required by other functions
+paddle_width = 20
+paddle_height = 100
+
+# current positions for each of the paddles
+paddle_start_y_left = int((window_height/2) - (paddle_height/2))
+paddle_start_y_right = int((window_height/2) - (paddle_height/2))
+
+# paddle movement velocity
+paddle_velocity = 10
+
+# ball velocity for x and y
+ball_vel_y = 5
+ball_vel_x = 5
+
+# ball current position x and y
+ball_x = window_width//2
+ball_y = window_height//2
+ball_rad = 10
+
+goals_l = 0
+goals_2 = 0
+
+
+# used to publish the current scores of the game
+def tell_goals():
+    set_font_bold()
+    set_font_size(16)
+    draw_text("Scores", window_width/2 - 35, window_height - 50)
+    set_font_size(12)
+    draw_text(str(goals_l), window_width/2 - 20, window_height - 20)
+    draw_text(str(goals_2), window_width/2 + 10, window_height - 20)
+
+
+# Draw the middle line to show different parts of the gaming field
+def draw_middle_line():
+    enable_smoothing()
+    enable_stroke()
+    set_stroke_color(0.8, 0.6, 0.5)
+    draw_line(window_width/2, 0, window_width/2, window_height )
+
+
+# Draw all paddles: The left and the right one
+def draw_paddles():
+    disable_stroke()
+    # left paddle
+    set_fill_color(0.8, 0.8, 0.5)
+    draw_rectangle(0, paddle_start_y_left, paddle_width, paddle_height)
+
+    # right paddle
+    set_fill_color(0.8, 0.8, 0.5)
+    draw_rectangle(window_width-paddle_width, paddle_start_y_right, paddle_width, paddle_height)
+
+
+# handle the movement of above drawn paddles
+def paddles_movements():
+    global paddle_start_y_right, paddle_start_y_left, paddle_velocity
+
+    # we only move paddles when the game is in progress
+    if game_in_progress:
+        if is_key_pressed("a") and paddle_start_y_left >= paddle_velocity:
+            paddle_start_y_left = paddle_start_y_left - paddle_velocity
+
+        if is_key_pressed("z") and window_height - paddle_height > paddle_start_y_left:
+            paddle_start_y_left = paddle_start_y_left + paddle_velocity
+
+        if is_key_pressed("k") and paddle_start_y_right >= paddle_velocity:
+            paddle_start_y_right = paddle_start_y_right - paddle_velocity
+
+        if is_key_pressed("m") and window_height - paddle_height > paddle_start_y_right:
+            paddle_start_y_right = paddle_start_y_right + paddle_velocity
+
+
+def draw_circle_fx():
+    global ball_x, ball_y
+    # To make it look better enable smoothing and enable stroke
+    enable_smoothing()
+    enable_stroke()
+    # now draw the circle starting from the center
+    set_fill_color(0.9, 0.9, 0.2)
+    set_stroke_color(0.9, 0.9, 0.2)
+    draw_circle(ball_x, ball_y, ball_rad)
+
+
+# handle the movements of the ball
+def animate_ball():
+    global game_in_progress, ball_vel_x, ball_vel_y, ball_x, ball_y
+
+    # detect of the ball reaches the x axis boundaries
+    if has_ball_reached_boundaries():
+        game_in_progress = False
+
+    # detect if game is in progress and continue moving the ball
+    if game_in_progress:
+        ball_x = ball_x + ball_vel_x
+        ball_y = ball_y + ball_vel_y
+
+    # detect when the ball hits the paddler and change the x-axis direction
+    if has_ball_hit_the_paddler():
+        ball_vel_x = -ball_vel_x
+        ball_vel_x *= 1.1
+        ball_vel_y *= 1.05
+
+    # detect when the ball hits the upper boundaries and change the y-axis direction
+    if has_ball_collided():
+        ball_vel_y = -ball_vel_y
+
+
+# detect when the ball hits the upper boundaries
+def has_ball_collided():
+    global ball_vel_x, ball_vel_y
+    if ball_y - ball_rad <= 0 or ball_y + ball_rad >= window_height:
+        return True
+    else:
+        return False
+
+
+# detect when the ball hits any of the paddlers
+def has_ball_hit_the_paddler():
+    # specif for left paddler
+    if ball_x <= ball_rad + paddle_width + abs(ball_vel_x):
+        if ball_y + ball_rad >= paddle_start_y_left and ball_y - ball_rad <= paddle_start_y_left + paddle_height:
+            return True
+        else:
+            return False
+    # specif for right paddler
+    elif ball_x >= window_width - ball_rad - paddle_width - abs(ball_vel_x):
+        if ball_y + ball_rad >= paddle_start_y_right and ball_y - ball_rad <= paddle_start_y_right + paddle_height:
+            return True
+        else:
+            return False
+
+
+# detect of the ball reaches the x axis boundaries, in few words fail
+def has_ball_reached_boundaries():
+    global goals_l, goals_2
+    if game_in_progress:
+        if ball_x <= ball_rad:
+            goals_2 = goals_2 + 1
+            return True
+        elif ball_x >= window_width - ball_rad:
+            goals_l = goals_l + 1
+            return True
+        else:
+            return False
+
+
+# function to reset the changing variables to their initial state and start the game
+def restart():
+    global game_in_progress, paddle_start_y_left, paddle_start_y_right,ball_vel_x, ball_vel_y, ball_x, ball_y
+    game_in_progress = True
+
+    # change the velocities back to 5 on x and 5 on y
+    ball_vel_y = ball_vel_y / abs(ball_vel_y) * 5
+    ball_vel_x = ball_vel_x / abs(ball_vel_x) * 5
+    # current positions for each of the paddles
+    paddle_start_y_left = (window_height / 2) - (paddle_height / 2)
+    paddle_start_y_right = (window_height / 2) - (paddle_height / 2)
+
+    ball_x = window_width / 2
+    ball_y = window_height / 2
+
+
+# global drawing handler function
+def drawer():
+    set_clear_color(0.2,0.2,0.2)
+    clear()
+    # detect space click and restart
+    if is_key_pressed(" "):
+        restart()
+    # detect q press and quit
+    if is_key_pressed("q"):
+        cs1_quit()
+    # other drawing functions
+    draw_middle_line()
+    #
+    draw_paddles()
+    paddles_movements()
+    #
+    draw_circle_fx()
+    animate_ball()
+
+    # publish goals function
+    tell_goals()
+
+
+def game_starter():
+    start_graphics(drawer, width=window_width, height=window_height, framerate=60, title="Comfort's Ping-Pong")
+
+
+game_starter()
+
+
+
